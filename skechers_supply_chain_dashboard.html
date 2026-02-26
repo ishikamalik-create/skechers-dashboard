@@ -1,0 +1,2035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Skechers | Smart Supply Chain Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@300;400;500;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   CSS VARIABLES & RESET
+============================================================ */
+:root {
+  --bg-dark:       #030b14;
+  --bg-panel:      #060e1a;
+  --bg-card:       rgba(10, 25, 50, 0.7);
+  --neon-blue:     #00c8ff;
+  --neon-cyan:     #00ffe0;
+  --neon-green:    #39ff85;
+  --neon-purple:   #7b5fff;
+  --text-primary:  #e0f4ff;
+  --text-muted:    #4a7fa5;
+  --border-glow:   rgba(0, 200, 255, 0.25);
+  --glass-bg:      rgba(6, 18, 40, 0.6);
+  --glow-blue:     0 0 20px rgba(0, 200, 255, 0.3);
+  --glow-cyan:     0 0 20px rgba(0, 255, 224, 0.3);
+  --glow-green:    0 0 20px rgba(57, 255, 133, 0.3);
+  --font-display:  'Orbitron', sans-serif;
+  --font-body:     'Rajdhani', sans-serif;
+  --font-mono:     'Share Tech Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg-dark);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* ============================================================
+   ANIMATED BACKGROUND GRID
+============================================================ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0,200,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,200,255,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* radial glow blobs */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 800px 600px at 15% 20%, rgba(0,200,255,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 600px 400px at 85% 70%, rgba(57,255,133,0.05) 0%, transparent 70%),
+    radial-gradient(ellipse 500px 400px at 50% 50%, rgba(123,95,255,0.04) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ============================================================
+   TOPBAR / HEADER
+============================================================ */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 2.5rem;
+  height: 64px;
+  background: rgba(3, 11, 20, 0.9);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-glow);
+  box-shadow: 0 1px 30px rgba(0,200,255,0.12);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-icon {
+  width: 36px; height: 36px;
+  border: 2px solid var(--neon-blue);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: var(--neon-blue);
+  box-shadow: var(--glow-blue);
+  animation: pulse 3s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: var(--glow-blue); }
+  50% { box-shadow: 0 0 35px rgba(0,200,255,0.6); }
+}
+
+.logo-text { font-family: var(--font-display); font-size: 13px; font-weight: 700; letter-spacing: 2px; color: var(--neon-blue); }
+.logo-sub  { font-family: var(--font-mono); font-size: 10px; color: var(--text-muted); letter-spacing: 1px; }
+
+.nav-links {
+  display: flex; gap: 4px;
+}
+
+.nav-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+}
+.nav-btn:hover, .nav-btn.active {
+  color: var(--neon-cyan);
+  background: rgba(0,255,224,0.08);
+}
+
+.status-bar {
+  display: flex; align-items: center; gap: 16px;
+  font-family: var(--font-mono); font-size: 11px;
+}
+
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--neon-green);
+  box-shadow: 0 0 10px var(--neon-green);
+  animation: blink 2s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{ opacity:1 } 50%{ opacity:0.3 } }
+
+.time-display { color: var(--neon-cyan); letter-spacing: 1px; }
+
+/* ============================================================
+   HERO / INTRO SECTION
+============================================================ */
+.hero {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 5rem 2rem 3rem;
+}
+
+.hero-tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 3px;
+  color: var(--neon-cyan);
+  border: 1px solid rgba(0,255,224,0.3);
+  border-radius: 20px;
+  padding: 6px 20px;
+  margin-bottom: 1.5rem;
+  text-transform: uppercase;
+}
+
+.hero-title {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 3.8rem);
+  font-weight: 900;
+  line-height: 1.1;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, var(--neon-blue), var(--neon-cyan) 50%, var(--neon-green));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-sub {
+  font-family: var(--font-body);
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  max-width: 700px;
+  margin: 0 auto 2.5rem;
+}
+
+.kpi-strip {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 2rem;
+}
+
+.kpi-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--glass-bg);
+  border: 1px solid var(--border-glow);
+  border-radius: 12px;
+  padding: 16px 28px;
+  backdrop-filter: blur(16px);
+  transition: transform 0.3s, border-color 0.3s;
+  cursor: default;
+}
+.kpi-chip:hover {
+  transform: translateY(-4px);
+  border-color: var(--neon-cyan);
+  box-shadow: var(--glow-cyan);
+}
+
+.kpi-num {
+  font-family: var(--font-display);
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: var(--neon-blue);
+  line-height: 1;
+}
+.kpi-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  margin-top: 4px;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   MAIN LAYOUT
+============================================================ */
+.main-container {
+  position: relative;
+  z-index: 1;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 1.5rem 4rem;
+}
+
+/* ============================================================
+   SECTION TITLES
+============================================================ */
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border-glow);
+}
+
+.section-icon {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.icon-blue  { background: var(--neon-blue); box-shadow: 0 0 10px var(--neon-blue); }
+.icon-cyan  { background: var(--neon-cyan); box-shadow: 0 0 10px var(--neon-cyan); }
+.icon-green { background: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
+
+.section-title {
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--neon-blue);
+}
+
+.section-desc {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+/* ============================================================
+   GLASS CARD
+============================================================ */
+.glass-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--border-glow);
+  border-radius: 16px;
+  padding: 1.75rem;
+  backdrop-filter: blur(16px);
+  transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+}
+.glass-card:hover {
+  border-color: rgba(0,200,255,0.4);
+  box-shadow: 0 8px 40px rgba(0,200,255,0.1);
+}
+
+/* ============================================================
+   TABS
+============================================================ */
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 1.5rem;
+  background: rgba(0,0,0,0.3);
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid var(--border-glow);
+}
+
+.tab-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.tab-btn.active {
+  background: rgba(0,200,255,0.15);
+  color: var(--neon-cyan);
+  border: 1px solid rgba(0,200,255,0.3);
+}
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* ============================================================
+   DASHBOARD GRIDS
+============================================================ */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+.span-2 { grid-column: span 2; }
+
+.section-gap { margin-bottom: 3rem; }
+
+/* ============================================================
+   CHART WRAPPERS
+============================================================ */
+.chart-container {
+  position: relative;
+  width: 100%;
+}
+.chart-title {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+/* ============================================================
+   SUPPLY CHAIN TIERS
+============================================================ */
+.tier-wrapper {
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+}
+
+.tier-col {
+  flex: 1;
+  min-width: 200px;
+  padding: 0 8px;
+  border-right: 1px solid var(--border-glow);
+}
+.tier-col:last-child { border-right: none; }
+
+.tier-label {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 8px 0 16px;
+  text-align: center;
+}
+.tier-1-label { color: var(--neon-blue); }
+.tier-2-label { color: var(--neon-cyan); }
+.tier-3-label { color: var(--neon-green); }
+
+.supplier-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: rgba(0,200,255,0.05);
+  border: 1px solid rgba(0,200,255,0.15);
+  border-radius: 10px;
+  padding: 12px 10px;
+  margin-bottom: 10px;
+  transition: all 0.3s;
+  cursor: default;
+  text-align: center;
+}
+.supplier-node:hover {
+  background: rgba(0,200,255,0.12);
+  border-color: var(--neon-blue);
+  transform: scale(1.02);
+  box-shadow: var(--glow-blue);
+}
+
+.supplier-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+.supplier-country {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.supplier-industry {
+  font-size: 10px;
+  color: var(--neon-cyan);
+  margin-top: 4px;
+  font-style: italic;
+}
+
+.tier-2-node { border-color: rgba(0,255,224,0.15); background: rgba(0,255,224,0.04); }
+.tier-2-node:hover { border-color: var(--neon-cyan); box-shadow: var(--glow-cyan); }
+
+.tier-3-node { border-color: rgba(57,255,133,0.15); background: rgba(57,255,133,0.03); }
+.tier-3-node:hover { border-color: var(--neon-green); box-shadow: var(--glow-green); }
+
+/* ============================================================
+   TABLE STYLES
+============================================================ */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.data-table th {
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-glow);
+}
+.data-table td {
+  padding: 10px 14px;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(0,200,255,0.06);
+  vertical-align: top;
+}
+.data-table tr:hover td { background: rgba(0,200,255,0.04); }
+.data-table td:first-child { font-weight: 600; color: var(--neon-cyan); }
+
+/* ============================================================
+   ESG PILLARS
+============================================================ */
+.esg-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+
+.esg-card {
+  border-radius: 14px;
+  padding: 1.5rem;
+  border: 1px solid;
+  transition: transform 0.3s, box-shadow 0.3s;
+  cursor: default;
+}
+.esg-card:hover { transform: translateY(-4px); }
+
+.esg-env { border-color: rgba(57,255,133,0.3); background: rgba(57,255,133,0.04); }
+.esg-env:hover { box-shadow: var(--glow-green); }
+.esg-soc { border-color: rgba(0,200,255,0.3); background: rgba(0,200,255,0.04); }
+.esg-soc:hover { box-shadow: var(--glow-blue); }
+.esg-gov { border-color: rgba(123,95,255,0.3); background: rgba(123,95,255,0.04); }
+.esg-gov:hover { box-shadow: 0 0 20px rgba(123,95,255,0.3); }
+
+.esg-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1rem;
+}
+.esg-icon { font-size: 1.5rem; }
+.esg-pillar-name {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+.esg-env .esg-pillar-name  { color: var(--neon-green); }
+.esg-soc .esg-pillar-name  { color: var(--neon-blue); }
+.esg-gov .esg-pillar-name  { color: var(--neon-purple); }
+
+.esg-item {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 5px 0;
+  padding-left: 12px;
+  border-left: 2px solid transparent;
+  transition: all 0.2s;
+}
+.esg-env .esg-item  { border-left-color: rgba(57,255,133,0.2); }
+.esg-soc .esg-item  { border-left-color: rgba(0,200,255,0.2); }
+.esg-gov .esg-item  { border-left-color: rgba(123,95,255,0.2); }
+.esg-item:hover { color: var(--text-primary); margin-left: 4px; }
+
+/* ============================================================
+   STRATEGY CARDS
+============================================================ */
+.strategy-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+
+.strategy-card {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  background: rgba(0,200,255,0.04);
+  border: 1px solid rgba(0,200,255,0.12);
+  border-radius: 12px;
+  padding: 1.2rem;
+  transition: all 0.3s;
+}
+.strategy-card:hover {
+  border-color: rgba(0,200,255,0.35);
+  background: rgba(0,200,255,0.08);
+  transform: translateY(-2px);
+}
+
+.strategy-num {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: rgba(0,200,255,0.25);
+  line-height: 1;
+  flex-shrink: 0;
+  min-width: 32px;
+}
+.strategy-name {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--neon-cyan);
+  margin-bottom: 4px;
+}
+.strategy-desc { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+/* ============================================================
+   TRANSPORT MODE BARS
+============================================================ */
+.transport-bars { display: flex; flex-direction: column; gap: 14px; }
+
+.mode-bar-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mode-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 500;
+}
+.mode-bar-name { color: var(--text-primary); }
+.mode-bar-pct  { font-family: var(--font-mono); color: var(--neon-blue); }
+
+.bar-track {
+  height: 8px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.bar-blue  { background: linear-gradient(90deg, var(--neon-blue), var(--neon-cyan)); }
+.bar-green { background: linear-gradient(90deg, var(--neon-green), var(--neon-cyan)); }
+.bar-purple{ background: linear-gradient(90deg, var(--neon-purple), var(--neon-blue)); }
+.bar-orange{ background: linear-gradient(90deg, #ff9f00, #ff6600); }
+
+/* ============================================================
+   PRICING TABLE
+============================================================ */
+.price-badge {
+  display: inline-block;
+  background: rgba(0,200,255,0.12);
+  border: 1px solid rgba(0,200,255,0.3);
+  border-radius: 6px;
+  padding: 2px 10px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--neon-blue);
+  white-space: nowrap;
+}
+.price-badge.green { background: rgba(57,255,133,0.1); border-color: rgba(57,255,133,0.3); color: var(--neon-green); }
+
+/* ============================================================
+   INVENTORY STATS
+============================================================ */
+.inv-stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+
+.inv-stat {
+  background: var(--glass-bg);
+  border: 1px solid var(--border-glow);
+  border-radius: 14px;
+  padding: 1.5rem 1.2rem;
+  text-align: center;
+  transition: all 0.3s;
+}
+.inv-stat:hover {
+  border-color: var(--neon-blue);
+  box-shadow: var(--glow-blue);
+  transform: translateY(-3px);
+}
+.inv-stat-val {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--neon-blue);
+}
+.inv-stat-lbl {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  margin-top: 4px;
+}
+
+/* ============================================================
+   PLANNING COMPARISON
+============================================================ */
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.compare-table th {
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 12px 16px;
+  text-align: left;
+}
+.compare-table th:nth-child(1) { color: var(--text-muted); }
+.compare-table th:nth-child(2) { color: var(--neon-cyan); background: rgba(0,255,224,0.06); }
+.compare-table th:nth-child(3) { color: #ff6b6b; background: rgba(255,107,107,0.06); }
+
+.compare-table td {
+  padding: 11px 16px;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.compare-table tr:hover td { background: rgba(255,255,255,0.02); }
+.compare-table td:nth-child(2) { color: var(--neon-cyan); font-weight: 600; }
+.compare-table td:nth-child(3) { color: #ff8a8a; }
+
+/* ============================================================
+   DOCUMENT CHIPS
+============================================================ */
+.doc-chips { display: flex; flex-wrap: wrap; gap: 10px; }
+.doc-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0,200,255,0.06);
+  border: 1px solid rgba(0,200,255,0.18);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: default;
+  transition: all 0.3s;
+}
+.doc-chip:hover {
+  background: rgba(0,200,255,0.14);
+  border-color: var(--neon-cyan);
+  color: var(--neon-cyan);
+  transform: translateY(-2px);
+}
+.doc-chip-icon { font-size: 14px; }
+
+/* ============================================================
+   REGIONAL MAP
+============================================================ */
+.region-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+
+.region-card {
+  display: flex;
+  gap: 14px;
+  padding: 1rem 1.2rem;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(0,200,255,0.1);
+  border-radius: 12px;
+  transition: all 0.3s;
+  cursor: default;
+}
+.region-card:hover {
+  border-color: var(--neon-blue);
+  background: rgba(0,200,255,0.05);
+  transform: translateX(4px);
+}
+
+.region-flag { font-size: 1.8rem; flex-shrink: 0; }
+.region-name { font-size: 14px; font-weight: 600; color: var(--neon-cyan); }
+.region-role { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
+.region-why  { font-size: 12px; color: var(--text-primary); margin-top: 4px; }
+
+/* ============================================================
+   FOOTER
+============================================================ */
+.footer {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  padding: 2rem;
+  border-top: 1px solid var(--border-glow);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.footer span { color: var(--neon-blue); }
+
+/* ============================================================
+   SCROLLBAR
+============================================================ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-dark); }
+::-webkit-scrollbar-thumb { background: rgba(0,200,255,0.3); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--neon-blue); }
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+@media (max-width: 1100px) {
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .inv-stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .esg-cards { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .topbar { padding: 0 1rem; }
+  .nav-links { display: none; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .grid-3 { grid-template-columns: 1fr; }
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .strategy-grid { grid-template-columns: 1fr; }
+  .region-grid { grid-template-columns: 1fr; }
+  .span-2 { grid-column: span 1; }
+}
+
+/* ============================================================
+   ANIMATIONS
+============================================================ */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-in {
+  opacity: 0;
+  animation: fadeInUp 0.6s ease forwards;
+}
+.delay-1 { animation-delay: 0.1s; }
+.delay-2 { animation-delay: 0.2s; }
+.delay-3 { animation-delay: 0.3s; }
+.delay-4 { animation-delay: 0.4s; }
+.delay-5 { animation-delay: 0.5s; }
+
+/* Scan line overlay */
+.scanline {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(0,200,255,0.4), transparent);
+  animation: scandown 8s linear infinite;
+  pointer-events: none;
+  z-index: 200;
+}
+@keyframes scandown {
+  0%   { top: 0; opacity: 1; }
+  90%  { opacity: 1; }
+  100% { top: 100vh; opacity: 0; }
+}
+
+/* ============================================================
+   SECTION WRAPPERS
+============================================================ */
+.section { margin-bottom: 3rem; }
+
+.section-panel-title {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.pill {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: 1px;
+}
+.pill-blue   { background: rgba(0,200,255,0.15); color: var(--neon-blue); border: 1px solid rgba(0,200,255,0.3); }
+.pill-green  { background: rgba(57,255,133,0.12); color: var(--neon-green); border: 1px solid rgba(57,255,133,0.3); }
+.pill-purple { background: rgba(123,95,255,0.12); color: var(--neon-purple); border: 1px solid rgba(123,95,255,0.3); }
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 13px;
+}
+.info-row:last-child { border-bottom: none; }
+.info-key { color: var(--text-muted); }
+.info-val { font-weight: 600; color: var(--text-primary); text-align: right; }
+.info-val.blue { color: var(--neon-blue); font-family: var(--font-mono); }
+.info-val.green { color: var(--neon-green); font-family: var(--font-mono); }
+</style>
+</head>
+<body>
+
+<!-- Scanline effect -->
+<div class="scanline"></div>
+
+<!-- ============================================================
+     TOPBAR
+============================================================ -->
+<header class="topbar">
+  <div class="logo">
+    <div class="logo-icon">SK</div>
+    <div>
+      <div class="logo-text">SKECHERS</div>
+      <div class="logo-sub">SMART SUPPLY CHAIN DASHBOARD</div>
+    </div>
+  </div>
+
+  <nav class="nav-links">
+    <button class="nav-btn active" onclick="scrollTo('overview')">Overview</button>
+    <button class="nav-btn" onclick="scrollTo('suppliers')">Suppliers</button>
+    <button class="nav-btn" onclick="scrollTo('inventory')">Inventory</button>
+    <button class="nav-btn" onclick="scrollTo('logistics')">Logistics</button>
+    <button class="nav-btn" onclick="scrollTo('esg')">ESG</button>
+    <button class="nav-btn" onclick="scrollTo('docs')">Documents</button>
+  </nav>
+
+  <div class="status-bar">
+    <div class="status-dot"></div>
+    <span style="color:var(--text-muted)">LIVE</span>
+    <span class="time-display" id="clock">00:00:00</span>
+  </div>
+</header>
+
+<!-- ============================================================
+     HERO
+============================================================ -->
+<section class="hero animate-in">
+  <div class="hero-tag">⚡ Group 09 · Ishika Malik · Procurement Analysis</div>
+  <h1 class="hero-title">Smart Supply Chain<br>Command Center</h1>
+  <p class="hero-sub">Real-time intelligence on Skechers' global procurement, logistics, inventory management, and ESG compliance across 15+ countries.</p>
+
+  <div class="kpi-strip">
+    <div class="kpi-chip">
+      <div class="kpi-num">$9.4B</div>
+      <div class="kpi-label">FY2025 Revenue</div>
+    </div>
+    <div class="kpi-chip">
+      <div class="kpi-num">$1.87B</div>
+      <div class="kpi-label">Inventory</div>
+    </div>
+    <div class="kpi-chip">
+      <div class="kpi-num">2.35×</div>
+      <div class="kpi-label">Inventory Turnover</div>
+    </div>
+    <div class="kpi-chip">
+      <div class="kpi-num">155</div>
+      <div class="kpi-label">Days Inventory Out.</div>
+    </div>
+    <div class="kpi-chip">
+      <div class="kpi-num">15+</div>
+      <div class="kpi-label">Source Countries</div>
+    </div>
+    <div class="kpi-chip">
+      <div class="kpi-num">80%</div>
+      <div class="kpi-label">Sea Freight Inbound</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     MAIN CONTENT
+============================================================ -->
+<main class="main-container">
+
+  <!-- ======================================================
+       SECTION 1: OVERVIEW / DEMAND
+  ====================================================== -->
+  <section class="section" id="overview">
+    <div class="section-header">
+      <div class="section-icon icon-blue"></div>
+      <span class="section-title">Demand & Revenue Intelligence</span>
+      <span class="section-desc">FY2022 – FY2026F</span>
+    </div>
+
+    <div class="grid-2" style="gap:1.5rem">
+
+      <!-- Revenue Chart -->
+      <div class="glass-card animate-in delay-1">
+        <div class="chart-title">Annual Revenue / Demand (USD Millions)</div>
+        <div class="chart-container" style="height:260px">
+          <canvas id="revenueChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Inventory Chart -->
+      <div class="glass-card animate-in delay-2">
+        <div class="chart-title">Inventory Trend (USD Millions)</div>
+        <div class="chart-container" style="height:260px">
+          <canvas id="inventoryChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Aggregate Metrics -->
+      <div class="glass-card animate-in delay-3">
+        <div class="chart-title">Aggregate Planning Parameters</div>
+        <div class="info-row"><span class="info-key">Beginning Inventory 2025 (FY2024 Closing)</span><span class="info-val blue">$1,919M</span></div>
+        <div class="info-row"><span class="info-key">Ending Inventory 2025 (TTM)</span><span class="info-val blue">$1,872M</span></div>
+        <div class="info-row"><span class="info-key">Average Inventory 2025</span><span class="info-val blue">$1,895.5M</span></div>
+        <div class="info-row"><span class="info-key">COGS 2025 (Cost of Revenue – TTM)</span><span class="info-val blue">$4,455M</span></div>
+        <div class="info-row"><span class="info-key">Inventory Turnover (COGS / Avg Inv)</span><span class="info-val green">2.35×</span></div>
+        <div class="info-row"><span class="info-key">DIO (365 / Turnover)</span><span class="info-val green">155.3 days</span></div>
+        <div class="info-row"><span class="info-key">Demand Growth Assumption (FY22–25 Avg)</span><span class="info-val blue">12.52%</span></div>
+        <div class="info-row"><span class="info-key">Forecast Demand FY2026</span><span class="info-val green">$10,590M</span></div>
+        <div class="info-row"><span class="info-key">Planned Avg Inventory FY2026</span><span class="info-val green">$2,133M</span></div>
+      </div>
+
+      <!-- Overstocking vs Understocking -->
+      <div class="glass-card animate-in delay-4">
+        <div class="chart-title">Inventory Health Assessment</div>
+        <div class="grid-2" style="gap:1rem; margin-bottom:1rem">
+          <div style="background:rgba(57,255,133,0.05); border:1px solid rgba(57,255,133,0.2); border-radius:10px; padding:1rem;">
+            <div style="font-family:var(--font-display);font-size:10px;letter-spacing:2px;color:var(--neon-green);margin-bottom:0.75rem;">✓ OVERSTOCKING CHECK</div>
+            <div class="info-row"><span class="info-key">Inventory Turnover</span><span class="info-val green">2.35× (Healthy)</span></div>
+            <div class="info-row"><span class="info-key">DIO</span><span class="info-val green">~155 days</span></div>
+            <div class="info-row"><span class="info-key">Inventory vs Sales</span><span class="info-val green">Aligned</span></div>
+            <div class="info-row"><span class="info-key">Write-offs</span><span class="info-val green">Not Observed</span></div>
+          </div>
+          <div style="background:rgba(255,107,107,0.05); border:1px solid rgba(255,107,107,0.2); border-radius:10px; padding:1rem;">
+            <div style="font-family:var(--font-display);font-size:10px;letter-spacing:2px;color:#ff8a8a;margin-bottom:0.75rem;">⚡ UNDERSTOCKING CHECK</div>
+            <div class="info-row"><span class="info-key">Inventory Turnover</span><span class="info-val" style="color:#ff8a8a">Moderate</span></div>
+            <div class="info-row"><span class="info-key">Lost Sales Risk</span><span class="info-val green">FG Maintained</span></div>
+            <div class="info-row"><span class="info-key">Service Level</span><span class="info-val green">Strong Retail Fill</span></div>
+          </div>
+        </div>
+        <div class="chart-container" style="height:130px">
+          <canvas id="turnoverGauge"></canvas>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ======================================================
+       SECTION 2: SUPPLIER TIERS
+  ====================================================== -->
+  <section class="section" id="suppliers">
+    <div class="section-header">
+      <div class="section-icon icon-cyan"></div>
+      <span class="section-title">Supplier Ecosystem – Tier Network</span>
+      <span class="section-desc">Bloomberg Sourced Data</span>
+    </div>
+
+    <div class="glass-card animate-in delay-1">
+      <div class="tier-wrapper">
+
+        <!-- TIER 1 -->
+        <div class="tier-col">
+          <div class="tier-label tier-1-label">◆ Tier 1 — Direct Suppliers</div>
+          <div class="supplier-node">
+            <div class="supplier-name">Yue Yuen Industrial Holdings</div>
+            <div class="supplier-country">🇭🇰 Hong Kong</div>
+            <div class="supplier-industry">Footwear / Apparel Mfg</div>
+          </div>
+          <div class="supplier-node">
+            <div class="supplier-name">Vastned NV</div>
+            <div class="supplier-country">🇧🇪 Belgium</div>
+            <div class="supplier-industry">Real Estate / REIT</div>
+          </div>
+          <div class="supplier-node">
+            <div class="supplier-name">Tanger Inc</div>
+            <div class="supplier-country">🇺🇸 United States</div>
+            <div class="supplier-industry">Real Estate / REIT</div>
+          </div>
+          <div class="supplier-node">
+            <div class="supplier-name">Taiwan Paiho Ltd</div>
+            <div class="supplier-country">🇹🇼 Taiwan</div>
+            <div class="supplier-industry">Textiles & Apparel Mfg</div>
+          </div>
+          <div class="supplier-node">
+            <div class="supplier-name">Makalot Industrial Co</div>
+            <div class="supplier-country">🇹🇼 Taiwan</div>
+            <div class="supplier-industry">Textiles & Apparel Mfg</div>
+          </div>
+          <div class="supplier-node">
+            <div class="supplier-name">Alibaba Group Holding</div>
+            <div class="supplier-country">🇨🇳 China</div>
+            <div class="supplier-industry">E-commerce / Internet</div>
+          </div>
+          <div class="supplier-node">
+            <div class="supplier-name">Vastned Retail NV</div>
+            <div class="supplier-country">🇧🇪 Belgium</div>
+            <div class="supplier-industry">Real Estate / REIT</div>
+          </div>
+        </div>
+
+        <!-- TIER 2 -->
+        <div class="tier-col">
+          <div class="tier-label tier-2-label">◆ Tier 2 — Indirect Suppliers</div>
+          <div class="supplier-node tier-2-node"><div class="supplier-name">IEIT Systems Co Ltd</div><div class="supplier-country">🇹🇼 Taiwan</div></div>
+          <div class="supplier-node tier-2-node"><div class="supplier-name">Alipay.com Co Ltd</div><div class="supplier-country">🇨🇳 China</div></div>
+          <div class="supplier-node tier-2-node"><div class="supplier-name">Asustek Computer Inc</div><div class="supplier-country">🇹🇼 Taiwan</div></div>
+          <div class="supplier-node tier-2-node"><div class="supplier-name">Deutsche Post AG</div><div class="supplier-country">🇩🇪 Germany</div></div>
+          <div class="supplier-node tier-2-node"><div class="supplier-name">WPP PLC</div><div class="supplier-country">🇬🇧 United Kingdom</div></div>
+          <div class="supplier-node tier-2-node"><div class="supplier-name">adidas AG</div><div class="supplier-country">🇩🇪 Germany</div></div>
+          <div class="supplier-node tier-2-node"><div class="supplier-name">NVIDIA Corp</div><div class="supplier-country">🇺🇸 United States</div></div>
+          <div class="supplier-node tier-2-node"><div class="supplier-name">Xiaomi Corp</div><div class="supplier-country">🇨🇳 China</div></div>
+          <div class="supplier-node tier-2-node"><div class="supplier-name">Siemens AG</div><div class="supplier-country">🇩🇪 Germany</div></div>
+          <div class="supplier-node tier-2-node"><div class="supplier-name">Logitech International</div><div class="supplier-country">🇨🇭 Switzerland</div></div>
+        </div>
+
+        <!-- TIER 3 -->
+        <div class="tier-col">
+          <div class="tier-label tier-3-label">◆ Tier 3 — Raw Material Suppliers</div>
+          <div class="supplier-node tier-3-node"><div class="supplier-name">Broadcom Inc</div><div class="supplier-country">🇺🇸 United States</div></div>
+          <div class="supplier-node tier-3-node"><div class="supplier-name">TE Connectivity PLC</div><div class="supplier-country">🇨🇭 Switzerland</div></div>
+          <div class="supplier-node tier-3-node"><div class="supplier-name">Intel Corp</div><div class="supplier-country">🇺🇸 United States</div></div>
+          <div class="supplier-node tier-3-node"><div class="supplier-name">Seagate Technology Holdings</div><div class="supplier-country">🇮🇪 Ireland</div></div>
+          <div class="supplier-node tier-3-node"><div class="supplier-name">Advanced Micro Devices</div><div class="supplier-country">🇺🇸 United States</div></div>
+          <div class="supplier-node tier-3-node"><div class="supplier-name">Shennan Circuits Co</div><div class="supplier-country">🇨🇳 China</div></div>
+          <div class="supplier-node tier-3-node"><div class="supplier-name">Samsung Electronics</div><div class="supplier-country">🇰🇷 South Korea</div></div>
+          <div class="supplier-node tier-3-node"><div class="supplier-name">SK hynix Inc</div><div class="supplier-country">🇰🇷 South Korea</div></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Material Sourcing Composition -->
+    <div style="margin-top:1.5rem" class="grid-2">
+      <div class="glass-card animate-in delay-2">
+        <div class="chart-title">Material Sourcing Composition by Country</div>
+        <div class="chart-container" style="height:260px">
+          <canvas id="materialPieChart"></canvas>
+        </div>
+      </div>
+      <div class="glass-card animate-in delay-3">
+        <div class="chart-title">Geographic Sourcing Strategy</div>
+        <div class="region-grid">
+          <div class="region-card">
+            <div class="region-flag">🇨🇳</div>
+            <div>
+              <div class="region-name">China <span class="pill pill-blue">61% Materials</span></div>
+              <div class="region-role">PRIMARY HUB</div>
+              <div class="region-why">Rubber outsoles, EVA/PU foam, mesh, fabric uppers, laces, packaging</div>
+            </div>
+          </div>
+          <div class="region-card">
+            <div class="region-flag">🇹🇼</div>
+            <div>
+              <div class="region-name">Taiwan <span class="pill pill-green">19% Materials</span></div>
+              <div class="region-role">TECHNICAL FABRICS</div>
+              <div class="region-why">High-grade technical fabrics, specialized textiles</div>
+            </div>
+          </div>
+          <div class="region-card">
+            <div class="region-flag">🇰🇷</div>
+            <div>
+              <div class="region-name">South Korea <span class="pill pill-purple">10% Materials</span></div>
+              <div class="region-role">PERFORMANCE</div>
+              <div class="region-why">Mesh material, performance polymers, advanced materials</div>
+            </div>
+          </div>
+          <div class="region-card">
+            <div class="region-flag">🇻🇳</div>
+            <div>
+              <div class="region-name">Vietnam</div>
+              <div class="region-role">MANUFACTURING</div>
+              <div class="region-why">Low labor cost, sports & lifestyle footwear production</div>
+            </div>
+          </div>
+          <div class="region-card">
+            <div class="region-flag">🇰🇭</div>
+            <div>
+              <div class="region-name">Cambodia</div>
+              <div class="region-role">LABOR-INTENSIVE</div>
+              <div class="region-why">Stitching, assembly, low cost operations</div>
+            </div>
+          </div>
+          <div class="region-card">
+            <div class="region-flag">🇲🇽</div>
+            <div>
+              <div class="region-name">Mexico</div>
+              <div class="region-role">NEARSHORING</div>
+              <div class="region-why">USMCA benefits, reduced US shipping time</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================
+       SECTION 3: INVENTORY & PLANNING
+  ====================================================== -->
+  <section class="section" id="inventory">
+    <div class="section-header">
+      <div class="section-icon icon-green"></div>
+      <span class="section-title">Inventory Management & Planning</span>
+      <span class="section-desc">FY2020 – FY2026F</span>
+    </div>
+
+    <div class="inv-stat-grid">
+      <div class="inv-stat">
+        <div class="inv-stat-val">$882.5M</div>
+        <div class="inv-stat-lbl">Lead Time Demand (1 mo)</div>
+      </div>
+      <div class="inv-stat">
+        <div class="inv-stat-val">$88.25M</div>
+        <div class="inv-stat-lbl">Safety Stock (10%)</div>
+      </div>
+      <div class="inv-stat">
+        <div class="inv-stat-val">$970.75M</div>
+        <div class="inv-stat-lbl">Reorder Point (ROP)</div>
+      </div>
+      <div class="inv-stat" style="border-color:rgba(57,255,133,0.3)">
+        <div class="inv-stat-val" style="color:var(--neon-green)">PROACTIVE</div>
+        <div class="inv-stat-lbl">Recommended Strategy</div>
+      </div>
+    </div>
+
+    <!-- Proactive vs Reactive Table -->
+    <div class="glass-card animate-in delay-1" style="margin-bottom:1.5rem">
+      <div class="chart-title">Proactive vs Reactive: Method Comparison</div>
+      <div style="overflow-x:auto">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th>Aspect</th>
+              <th>✅ Proactive Method</th>
+              <th>⚠️ Reactive Method</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Safety Stock</td><td>Yes (pre-defined 10%)</td><td>No buffer</td></tr>
+            <tr><td>Reorder Point</td><td>Predefined ($970.75M)</td><td>No fixed trigger</td></tr>
+            <tr><td>Stockout Risk</td><td>Controlled – May triggers ROP</td><td>Very High – Stockout from June</td></tr>
+            <tr><td>Service Level</td><td>High – continuous fill</td><td>Poor – escalating backorders</td></tr>
+            <tr><td>Cost Control</td><td>Planned expenditure</td><td>Expensive expediting costs</td></tr>
+            <tr><td>Suitability for Skechers</td><td>YES – aligns with global ops</td><td>NO – fails at scale</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Monthly Simulation Chart -->
+    <div class="glass-card animate-in delay-2">
+      <div class="chart-title">Monthly Inventory Simulation (Apr–Mar): Proactive vs Reactive</div>
+      <div class="chart-container" style="height:280px">
+        <canvas id="planningChart"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================
+       SECTION 4: LOGISTICS / TRANSPORT
+  ====================================================== -->
+  <section class="section" id="logistics">
+    <div class="section-header">
+      <div class="section-icon icon-blue"></div>
+      <span class="section-title">Logistics & Transport Operations</span>
+      <span class="section-desc">Inbound + Outbound</span>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('inbound')">Inbound Logistics</button>
+      <button class="tab-btn" onclick="switchTab('outbound')">Outbound Logistics</button>
+      <button class="tab-btn" onclick="switchTab('pricing')">Freight Pricing</button>
+      <button class="tab-btn" onclick="switchTab('ports')">Regional Ports</button>
+    </div>
+
+    <!-- INBOUND TAB -->
+    <div id="tab-inbound" class="tab-content active">
+      <div class="grid-2" style="gap:1.5rem">
+        <div class="glass-card">
+          <div class="chart-title">Inbound Transport Mode Split</div>
+          <div class="transport-bars" style="margin-bottom:1.5rem">
+            <div class="mode-bar-row">
+              <div class="mode-bar-label"><span class="mode-bar-name">🚢 Sea Freight</span><span class="mode-bar-pct">80%</span></div>
+              <div class="bar-track"><div class="bar-fill bar-blue" style="width:0" data-target="80"></div></div>
+            </div>
+            <div class="mode-bar-row">
+              <div class="mode-bar-label"><span class="mode-bar-name">✈️ Air Freight</span><span class="mode-bar-pct">10%</span></div>
+              <div class="bar-track"><div class="bar-fill bar-purple" style="width:0" data-target="10"></div></div>
+            </div>
+            <div class="mode-bar-row">
+              <div class="mode-bar-label"><span class="mode-bar-name">🚛 Road Transport</span><span class="mode-bar-pct">10%</span></div>
+              <div class="bar-track"><div class="bar-fill bar-green" style="width:0" data-target="10"></div></div>
+            </div>
+          </div>
+          <div class="chart-container" style="height:200px">
+            <canvas id="inboundPieChart"></canvas>
+          </div>
+        </div>
+
+        <div class="glass-card">
+          <div class="chart-title">Inbound Logistics Overview</div>
+          <div class="info-row"><span class="info-key">Sea Freight Cost</span><span class="info-val blue">4–8% of FOB value</span></div>
+          <div class="info-row"><span class="info-key">Air Freight Cost</span><span class="info-val blue">20–30% of FOB value</span></div>
+          <div class="info-row"><span class="info-key">Inland Road/Rail Cost</span><span class="info-val blue">8–12% of FOB value</span></div>
+          <div class="info-row"><span class="info-key">Cargo Type</span><span class="info-val">Finished footwear, shoe uppers, soles, packaging</span></div>
+          <div class="info-row"><span class="info-key">Container Type</span><span class="info-val">40-ft containers (hundreds of TEUs annually)</span></div>
+          <div style="margin-top:1.5rem">
+            <div class="chart-title">Time & Cost Reduction Strategies</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:0.5rem">
+              <span class="pill pill-blue">Supplier consolidation in Asia</span>
+              <span class="pill pill-green">Regional DC strategy</span>
+              <span class="pill pill-blue">FCL shipment consolidation</span>
+              <span class="pill pill-green">Demand forecasting systems</span>
+              <span class="pill pill-blue">Ocean-first for non-urgent cargo</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OUTBOUND TAB -->
+    <div id="tab-outbound" class="tab-content">
+      <div class="grid-2" style="gap:1.5rem">
+        <div class="glass-card">
+          <div class="chart-title">Outbound Transport Mode Split</div>
+          <div class="transport-bars" style="margin-bottom:1.5rem">
+            <div class="mode-bar-row">
+              <div class="mode-bar-label"><span class="mode-bar-name">🚢 Sea Freight</span><span class="mode-bar-pct">55%</span></div>
+              <div class="bar-track"><div class="bar-fill bar-blue" style="width:0" data-target="55"></div></div>
+            </div>
+            <div class="mode-bar-row">
+              <div class="mode-bar-label"><span class="mode-bar-name">🚛 Road Transport</span><span class="mode-bar-pct">30%</span></div>
+              <div class="bar-track"><div class="bar-fill bar-green" style="width:0" data-target="30"></div></div>
+            </div>
+            <div class="mode-bar-row">
+              <div class="mode-bar-label"><span class="mode-bar-name">✈️ Air Freight</span><span class="mode-bar-pct">10%</span></div>
+              <div class="bar-track"><div class="bar-fill bar-purple" style="width:0" data-target="10"></div></div>
+            </div>
+            <div class="mode-bar-row">
+              <div class="mode-bar-label"><span class="mode-bar-name">🚂 Rail Transport</span><span class="mode-bar-pct">5%</span></div>
+              <div class="bar-track"><div class="bar-fill bar-orange" style="width:0" data-target="5"></div></div>
+            </div>
+          </div>
+          <div class="chart-container" style="height:180px">
+            <canvas id="outboundPieChart"></canvas>
+          </div>
+        </div>
+        <div class="glass-card">
+          <div class="chart-title">Outbound Logistics Overview</div>
+          <div class="info-row"><span class="info-key">Road delivery cost</span><span class="info-val blue">8–15% of product value</span></div>
+          <div class="info-row"><span class="info-key">Sea freight cost</span><span class="info-val blue">4–8%</span></div>
+          <div class="info-row"><span class="info-key">Air freight cost</span><span class="info-val blue">20–30%</span></div>
+          <div class="info-row"><span class="info-key">Cargo Type</span><span class="info-val">Finished shoes, apparel, accessories</span></div>
+          <div class="info-row"><span class="info-key">Volume</span><span class="info-val">Thousands of pallets daily from regional DCs</span></div>
+          <div style="margin-top:1.5rem">
+            <div class="chart-title">Distribution Centers</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:0.5rem">
+              <span class="pill pill-blue">🇺🇸 California, USA</span>
+              <span class="pill pill-green">🇧🇪 Liège, Belgium</span>
+              <span class="pill pill-blue">🇨🇳 Taicang, China</span>
+              <span class="pill pill-green">🇮🇳 Mumbai, India</span>
+              <span class="pill pill-blue">🇯🇵 Japan</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRICING TAB -->
+    <div id="tab-pricing" class="tab-content">
+      <div class="glass-card">
+        <div class="chart-title">Freight Benchmark Pricing (Skechers Asia–US/EU Lanes)</div>
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Transport Mode</th>
+                <th>Route / Basis</th>
+                <th>Benchmark Unit Cost</th>
+                <th>Cost Metric</th>
+                <th>Source</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Ocean Freight (FCL – Spot)</td>
+                <td style="color:var(--text-muted);font-size:12px">Shanghai/Ningbo/HCM → LA/Rotterdam</td>
+                <td><span class="price-badge">US$2,379 / 40-ft container</span></td>
+                <td style="font-size:12px">Per container (FCL)</td>
+                <td style="font-size:11px;color:var(--text-muted)">Drewry WCI</td>
+              </tr>
+              <tr>
+                <td>Ocean Freight (Converted)</td>
+                <td style="color:var(--text-muted);font-size:12px">40-ft container ≈ 27 tonnes</td>
+                <td><span class="price-badge">≈ US$88 / tonne</span></td>
+                <td style="font-size:12px">Per tonne</td>
+                <td style="font-size:11px;color:var(--text-muted)">Drewry WCI</td>
+              </tr>
+              <tr>
+                <td>Air Freight</td>
+                <td style="color:var(--text-muted);font-size:12px">China/Vietnam → North America/Europe</td>
+                <td><span class="price-badge">US$5–6/kg (≈US$5.7/kg)</span></td>
+                <td style="font-size:12px">Per kg</td>
+                <td style="font-size:11px;color:var(--text-muted)">Freightos FAX</td>
+              </tr>
+              <tr>
+                <td>Air Freight (Converted)</td>
+                <td style="color:var(--text-muted);font-size:12px">Per tonne equivalent for urgent cargo</td>
+                <td><span class="price-badge green">≈ US$5,700 / tonne</span></td>
+                <td style="font-size:12px">Per tonne</td>
+                <td style="font-size:11px;color:var(--text-muted)">Freightos FAX</td>
+              </tr>
+              <tr>
+                <td>Rail Transport (Inland)</td>
+                <td style="color:var(--text-muted);font-size:12px">Port → Skechers DC (India)</td>
+                <td><span class="price-badge">₹1.96 / tonne-km</span></td>
+                <td style="font-size:12px">Per tonne-km</td>
+                <td style="font-size:11px;color:var(--text-muted)">DPIIT/NCAER</td>
+              </tr>
+              <tr>
+                <td>Road Transport (Inland)</td>
+                <td style="color:var(--text-muted);font-size:12px">Port → DC → Retailers</td>
+                <td><span class="price-badge">₹11.03 / tonne-km</span></td>
+                <td style="font-size:12px">Per tonne-km</td>
+                <td style="font-size:11px;color:var(--text-muted)">DPIIT/NCAER</td>
+              </tr>
+              <tr>
+                <td>Inland Waterways</td>
+                <td style="color:var(--text-muted);font-size:12px">Alternative domestic benchmark</td>
+                <td><span class="price-badge green">₹2.30 / tonne-km</span></td>
+                <td style="font-size:12px">Per tonne-km</td>
+                <td style="font-size:11px;color:var(--text-muted)">DPIIT/NCAER</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Cost comparison chart -->
+        <div style="margin-top:1.5rem">
+          <div class="chart-title">Freight Cost Comparison (USD per Tonne)</div>
+          <div class="chart-container" style="height:220px">
+            <canvas id="freightCostChart"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PORTS TAB -->
+    <div id="tab-ports" class="tab-content">
+      <div class="glass-card">
+        <div class="chart-title">Regional Port Strategy</div>
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Region</th>
+                <th>Logistics Role</th>
+                <th>Major Ports</th>
+                <th>Rationale</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>🌏 Asia (Origin Hubs)</td>
+                <td style="font-size:12px;color:var(--neon-cyan)">Inbound – footwear sourcing</td>
+                <td style="font-size:12px">Shanghai, Ningbo-Zhoushan, Shenzhen, Ho Chi Minh City, Hai Phong</td>
+                <td style="font-size:12px;color:var(--text-muted)">Proximity to contract manufacturing clusters; high container throughput</td>
+              </tr>
+              <tr>
+                <td>🇨🇳 China (Regional)</td>
+                <td style="font-size:12px;color:var(--neon-cyan)">Inbound & Outbound (Asia-Pacific DC)</td>
+                <td style="font-size:12px">Shanghai, Ningbo</td>
+                <td style="font-size:12px;color:var(--text-muted)">Close to Taicang distribution center; port-to-DC connectivity</td>
+              </tr>
+              <tr>
+                <td>🇪🇺 Europe</td>
+                <td style="font-size:12px;color:var(--neon-cyan)">Outbound – finished goods distribution</td>
+                <td style="font-size:12px">Rotterdam, Hamburg, Antwerp</td>
+                <td style="font-size:12px;color:var(--text-muted)">Largest EU container gateways; rail/road links to Liège DC</td>
+              </tr>
+              <tr>
+                <td>🇺🇸 North America</td>
+                <td style="font-size:12px;color:var(--neon-cyan)">Outbound – finished goods distribution</td>
+                <td style="font-size:12px">Los Angeles / Long Beach, New York / New Jersey</td>
+                <td style="font-size:12px;color:var(--text-muted)">Primary US import gateways; proximity to California distribution center</td>
+              </tr>
+              <tr>
+                <td>🇮🇳 India</td>
+                <td style="font-size:12px;color:var(--neon-cyan)">Outbound – regional market distribution</td>
+                <td style="font-size:12px">Nhava Sheva (JNPT), Mumbai</td>
+                <td style="font-size:12px;color:var(--text-muted)">India's largest container port; near Skechers India distribution hub</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================
+       SECTION 5: ESG
+  ====================================================== -->
+  <section class="section" id="esg">
+    <div class="section-header">
+      <div class="section-icon icon-green"></div>
+      <span class="section-title">ESG Procurement Framework</span>
+      <span class="section-desc">Environmental · Social · Governance</span>
+    </div>
+
+    <div class="esg-cards">
+      <!-- Environmental -->
+      <div class="esg-card esg-env">
+        <div class="esg-header">
+          <span class="esg-icon">🌿</span>
+          <span class="esg-pillar-name">Environmental</span>
+        </div>
+        <div class="esg-item">Recycled materials (EVA, plastics)</div>
+        <div class="esg-item">Reduced-water manufacturing processes</div>
+        <div class="esg-item">Sustainable packaging initiatives</div>
+        <div class="esg-item">Energy-efficient supplier factories</div>
+        <div class="esg-item">Responsible chemical use compliance</div>
+        <div style="margin-top:1rem;padding-top:0.75rem;border-top:1px solid rgba(57,255,133,0.15)">
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--neon-green);margin-bottom:0.5rem;">KPIs</div>
+          <div class="esg-item">% recycled content in products</div>
+          <div class="esg-item">Carbon emissions per pair produced</div>
+          <div class="esg-item">Chemicals compliance score</div>
+          <div class="esg-item">% sustainable packaging used</div>
+        </div>
+      </div>
+
+      <!-- Social -->
+      <div class="esg-card esg-soc">
+        <div class="esg-header">
+          <span class="esg-icon">👥</span>
+          <span class="esg-pillar-name">Social</span>
+        </div>
+        <div class="esg-item">Strict supplier code of conduct</div>
+        <div class="esg-item">No child labor or forced labor policy</div>
+        <div class="esg-item">Health & safety standards enforcement</div>
+        <div class="esg-item">Regular third-party factory audits</div>
+        <div class="esg-item">Worker welfare and training programs</div>
+        <div style="margin-top:1rem;padding-top:0.75rem;border-top:1px solid rgba(0,200,255,0.15)">
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--neon-blue);margin-bottom:0.5rem;">KPIs</div>
+          <div class="esg-item">Number of supplier audits passed</div>
+          <div class="esg-item">Health & safety incident rate</div>
+          <div class="esg-item">Corrective action closure rate</div>
+          <div class="esg-item">% suppliers meeting social compliance</div>
+        </div>
+      </div>
+
+      <!-- Governance -->
+      <div class="esg-card esg-gov">
+        <div class="esg-header">
+          <span class="esg-icon">⚖️</span>
+          <span class="esg-pillar-name">Governance</span>
+        </div>
+        <div class="esg-item">Supply chain transparency policies</div>
+        <div class="esg-item">Ethical sourcing requirements</div>
+        <div class="esg-item">Anti-corruption & fair-trade rules</div>
+        <div class="esg-item">Long-term partnerships with compliant suppliers</div>
+        <div class="esg-item">Traceability systems implementation</div>
+        <div style="margin-top:1rem;padding-top:0.75rem;border-top:1px solid rgba(123,95,255,0.15)">
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--neon-purple);margin-bottom:0.5rem;">KPIs</div>
+          <div class="esg-item">% suppliers fully traceable</div>
+          <div class="esg-item">Audit compliance rating</div>
+          <div class="esg-item">Number of governance violations</div>
+          <div class="esg-item">Supplier risk score tracking</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Best Procurement Strategies -->
+    <div class="glass-card animate-in delay-2">
+      <div class="section-panel-title">Best Procurement Strategies Deployed by Skechers</div>
+      <div class="strategy-grid">
+        <div class="strategy-card">
+          <div class="strategy-num">01</div>
+          <div>
+            <div class="strategy-name">Global Sourcing from Asia</div>
+            <div class="strategy-desc">Low manufacturing cost, high scalability, skilled footwear suppliers, and strong material availability. China, Vietnam, Cambodia produce majority of Skechers footwear.</div>
+          </div>
+        </div>
+        <div class="strategy-card">
+          <div class="strategy-num">02</div>
+          <div>
+            <div class="strategy-name">China+1 Diversification</div>
+            <div class="strategy-desc">Reduces risk from tariffs, geopolitical tensions, and over-reliance on one country. Production shifted to Vietnam, Cambodia, Indonesia.</div>
+          </div>
+        </div>
+        <div class="strategy-card">
+          <div class="strategy-num">03</div>
+          <div>
+            <div class="strategy-name">Third-Party Manufacturing Model</div>
+            <div class="strategy-desc">No owned factories. Enables flexibility, lower capital investment, and rapid scaling for new product lines through contract manufacturing in Asia.</div>
+          </div>
+        </div>
+        <div class="strategy-card">
+          <div class="strategy-num">04</div>
+          <div>
+            <div class="strategy-name">Material Innovation (EVA, Memory Foam)</div>
+            <div class="strategy-desc">Supports brand differentiation (comfort-based products) and quality consistency. Memory Foam insoles, lightweight EVA midsoles widely used.</div>
+          </div>
+        </div>
+        <div class="strategy-card">
+          <div class="strategy-num">05</div>
+          <div>
+            <div class="strategy-name">Supplier Compliance & Audits</div>
+            <div class="strategy-desc">Ensures ethical production, reduces risk, and aligns with global consumer expectations for ESG. Regular factory audits and supplier code of conduct.</div>
+          </div>
+        </div>
+        <div class="strategy-card">
+          <div class="strategy-num">06</div>
+          <div>
+            <div class="strategy-name">Efficient Logistics & Distribution</div>
+            <div class="strategy-desc">Reduces delivery time and cost; supports fast replenishment for global demand. Distribution centers in the US, Europe, Japan, and China.</div>
+          </div>
+        </div>
+        <div class="strategy-card">
+          <div class="strategy-num">07</div>
+          <div>
+            <div class="strategy-name">Nearshoring for North America</div>
+            <div class="strategy-desc">Faster shipping, reduced logistics cost, and improved responsiveness to US market demand. Selective sourcing from Mexico for quick-turn models.</div>
+          </div>
+        </div>
+        <div class="strategy-card">
+          <div class="strategy-num">08</div>
+          <div>
+            <div class="strategy-name">Digital Supply Chain & Forecasting</div>
+            <div class="strategy-desc">Improves planning accuracy, manages inventory risk, and enhances procurement decisions. Use of demand forecasting tools and real-time tracking.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================
+       SECTION 6: KEY PROCUREMENT PARAMETERS
+  ====================================================== -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-icon icon-cyan"></div>
+      <span class="section-title">Key Procurement Parameters</span>
+    </div>
+
+    <div class="grid-3">
+      <div class="glass-card">
+        <div class="chart-title">Cost Efficiency</div>
+        <div class="esg-item" style="border-left-color:rgba(0,200,255,0.4)">Competitive labor cost in sourcing countries</div>
+        <div class="esg-item" style="border-left-color:rgba(0,200,255,0.4)">Raw material cost optimization (EVA, rubber, textiles)</div>
+        <div class="esg-item" style="border-left-color:rgba(0,200,255,0.4)">Economies of scale from large-volume orders</div>
+        <div class="esg-item" style="border-left-color:rgba(0,200,255,0.4)">Currency fluctuation management in Asian markets</div>
+      </div>
+      <div class="glass-card">
+        <div class="chart-title">Supplier Capability & Quality</div>
+        <div class="esg-item" style="border-left-color:rgba(57,255,133,0.4)">Ability to manufacture high-performance footwear</div>
+        <div class="esg-item" style="border-left-color:rgba(57,255,133,0.4)">Compliance with Skechers quality specifications</div>
+        <div class="esg-item" style="border-left-color:rgba(57,255,133,0.4)">Technical expertise in outsole, midsole, upper construction</div>
+        <div class="esg-item" style="border-left-color:rgba(57,255,133,0.4)">Consistent quality control and defect minimization</div>
+      </div>
+      <div class="glass-card">
+        <div class="chart-title">Lead Time & Flexibility</div>
+        <div class="esg-item" style="border-left-color:rgba(123,95,255,0.4)">Fast production cycles for global market demand</div>
+        <div class="esg-item" style="border-left-color:rgba(123,95,255,0.4)">Efficient coordination between factories & warehouses</div>
+        <div class="esg-item" style="border-left-color:rgba(123,95,255,0.4)">On-time delivery scorecards</div>
+        <div class="esg-item" style="border-left-color:rgba(123,95,255,0.4)">Ability to scale production up/down quickly</div>
+        <div class="esg-item" style="border-left-color:rgba(123,95,255,0.4)">Adaptive capacity to introduce new designs & SKUs</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================
+       SECTION 7: LEGAL DOCUMENTS
+  ====================================================== -->
+  <section class="section" id="docs">
+    <div class="section-header">
+      <div class="section-icon icon-blue"></div>
+      <span class="section-title">Trade & Logistics Documentation</span>
+    </div>
+
+    <div class="glass-card">
+      <div class="doc-chips" style="margin-bottom:1.5rem">
+        <div class="doc-chip"><span class="doc-chip-icon">📄</span>Commercial Invoice</div>
+        <div class="doc-chip"><span class="doc-chip-icon">📦</span>Packing List</div>
+        <div class="doc-chip"><span class="doc-chip-icon">🚢</span>Bill of Lading (B/L)</div>
+        <div class="doc-chip"><span class="doc-chip-icon">✈️</span>Air Waybill (AWB)</div>
+        <div class="doc-chip"><span class="doc-chip-icon">🏷️</span>Certificate of Origin</div>
+        <div class="doc-chip"><span class="doc-chip-icon">📝</span>Commercial Contract / PO</div>
+        <div class="doc-chip"><span class="doc-chip-icon">🛡️</span>Insurance Certificate</div>
+        <div class="doc-chip"><span class="doc-chip-icon">🛃</span>Customs Declaration</div>
+        <div class="doc-chip"><span class="doc-chip-icon">✅</span>Product Compliance Certs</div>
+        <div class="doc-chip"><span class="doc-chip-icon">⚠️</span>Dangerous Goods Declaration</div>
+        <div class="doc-chip"><span class="doc-chip-icon">🌿</span>Phytosanitary Certificate</div>
+        <div class="doc-chip"><span class="doc-chip-icon">📋</span>Shipper's Letter of Instruction</div>
+      </div>
+
+      <div style="overflow-x:auto">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Document</th>
+              <th>Purpose</th>
+              <th>Issued By</th>
+              <th>Where to Access</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Commercial Invoice</td>
+              <td style="font-size:12px;color:var(--text-muted)">Declares transaction value; basis for customs valuation and duty calculation</td>
+              <td style="font-size:12px">Skechers supplier / Exporter</td>
+              <td style="font-size:12px;color:var(--text-muted)">US CBP, EU TARIC, India ICEGATE</td>
+            </tr>
+            <tr>
+              <td>Bill of Lading</td>
+              <td style="font-size:12px;color:var(--text-muted)">Contract of carriage and receipt of cargo; document of title</td>
+              <td style="font-size:12px">Shipping line / Freight forwarder</td>
+              <td style="font-size:12px;color:var(--text-muted)">Maersk, MSC, CMA CGM portals</td>
+            </tr>
+            <tr>
+              <td>Certificate of Origin</td>
+              <td style="font-size:12px;color:var(--text-muted)">Certifies country of manufacture for tariff and FTA benefits</td>
+              <td style="font-size:12px">Chamber of Commerce / Government</td>
+              <td style="font-size:12px;color:var(--text-muted)">Chambers of Commerce; customs portals</td>
+            </tr>
+            <tr>
+              <td>Customs Declaration</td>
+              <td style="font-size:12px;color:var(--text-muted)">Legal declaration for import/export clearance</td>
+              <td style="font-size:12px">Importer / Exporter via Customs Broker</td>
+              <td style="font-size:12px;color:var(--text-muted)">US CBP, EU TARIC, India ICEGATE, China Customs</td>
+            </tr>
+            <tr>
+              <td>Product Compliance Certs</td>
+              <td style="font-size:12px;color:var(--text-muted)">Confirms compliance with safety and labeling rules (CPSIA–US, REACH–EU, BIS–India)</td>
+              <td style="font-size:12px">Certification bodies / Testing labs</td>
+              <td style="font-size:12px;color:var(--text-muted)">BIS (India); EU notified bodies; US CPSC</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ============================================================
+     FOOTER
+============================================================ -->
+<footer class="footer">
+  <div>SKECHERS SMART SUPPLY CHAIN DASHBOARD · <span>Group 09</span> · Ishika Malik · Procurement Analysis</div>
+  <div style="margin-top:6px">Data sourced from Bloomberg, Skechers Annual Reports, SEC Filings, Drewry WCI, Freightos FAX, DPIIT/NCAER</div>
+</footer>
+
+<!-- ============================================================
+     JAVASCRIPT
+============================================================ -->
+<script>
+/* ============================================================
+   CLOCK
+============================================================ */
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toTimeString().slice(0,8);
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+/* ============================================================
+   SCROLL NAV
+============================================================ */
+function scrollTo(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+/* ============================================================
+   TAB SWITCHER
+============================================================ */
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+    btn.classList.remove('active');
+    if (btn.getAttribute('onclick').includes(tabId)) btn.classList.add('active');
+  });
+  document.querySelectorAll('.tab-content').forEach(c => {
+    c.classList.remove('active');
+    if (c.id === 'tab-' + tabId) c.classList.add('active');
+  });
+  // Animate bars in newly active tab
+  setTimeout(animateBars, 100);
+}
+
+/* ============================================================
+   ANIMATE PROGRESS BARS
+============================================================ */
+function animateBars() {
+  document.querySelectorAll('.bar-fill[data-target]').forEach(bar => {
+    const target = bar.dataset.target;
+    bar.style.width = target + '%';
+  });
+}
+
+/* ============================================================
+   CHART.JS GLOBAL DEFAULTS
+============================================================ */
+Chart.defaults.color = '#4a7fa5';
+Chart.defaults.font.family = "'Share Tech Mono', monospace";
+Chart.defaults.font.size = 11;
+
+const neonBlue  = '#00c8ff';
+const neonCyan  = '#00ffe0';
+const neonGreen = '#39ff85';
+const neonPurple= '#7b5fff';
+const neonOrange= '#ff9f00';
+
+/* ============================================================
+   1. REVENUE CHART
+============================================================ */
+new Chart(document.getElementById('revenueChart'), {
+  type: 'bar',
+  data: {
+    labels: ['FY2022', 'FY2023', 'FY2024', 'FY2025 (TTM)'],
+    datasets: [{
+      label: 'Revenue (USD Mn)',
+      data: [7445, 8000, 8969, 9412],
+      backgroundColor: [
+        'rgba(0,200,255,0.25)',
+        'rgba(0,200,255,0.35)',
+        'rgba(0,200,255,0.5)',
+        'rgba(57,255,133,0.5)',
+      ],
+      borderColor: [neonBlue, neonBlue, neonBlue, neonGreen],
+      borderWidth: 1.5,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false },
+      tooltip: {
+        backgroundColor: '#060e1a',
+        borderColor: neonBlue,
+        borderWidth: 1,
+        callbacks: { label: ctx => `$${ctx.raw.toLocaleString()} Mn` }
+      }
+    },
+    scales: {
+      x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4a7fa5' } },
+      y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4a7fa5', callback: v => `$${(v/1000).toFixed(1)}B` } }
+    }
+  }
+});
+
+/* ============================================================
+   2. INVENTORY CHART
+============================================================ */
+new Chart(document.getElementById('inventoryChart'), {
+  type: 'line',
+  data: {
+    labels: ['FY2020','FY2021','FY2022','FY2023','FY2024','FY2025'],
+    datasets: [{
+      label: 'Inventory (USD Mn)',
+      data: [1017, 1471, 1818, 1525, 1919, 1872],
+      borderColor: neonCyan,
+      backgroundColor: 'rgba(0,255,224,0.08)',
+      borderWidth: 2,
+      pointBackgroundColor: neonCyan,
+      pointRadius: 5,
+      pointHoverRadius: 8,
+      fill: true,
+      tension: 0.4,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false },
+      tooltip: {
+        backgroundColor: '#060e1a',
+        borderColor: neonCyan,
+        borderWidth: 1,
+        callbacks: { label: ctx => `$${ctx.raw.toLocaleString()} Mn` }
+      }
+    },
+    scales: {
+      x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4a7fa5' } },
+      y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4a7fa5', callback: v => `$${v}Mn` } }
+    }
+  }
+});
+
+/* ============================================================
+   3. TURNOVER GAUGE (doughnut)
+============================================================ */
+new Chart(document.getElementById('turnoverGauge'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Actual Turnover', 'Remaining to 6x'],
+    datasets: [{
+      data: [2.35, 3.65],
+      backgroundColor: ['rgba(57,255,133,0.7)', 'rgba(255,255,255,0.05)'],
+      borderColor: ['var(--neon-green)', 'rgba(255,255,255,0.03)'],
+      borderWidth: 1,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    rotation: -90, circumference: 180,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ctx.label === 'Actual Turnover' ? '2.35× (Healthy)' : 'Room before understocking risk' } }
+    },
+    cutout: '72%',
+  }
+});
+
+/* ============================================================
+   4. MATERIAL PIE CHART
+============================================================ */
+new Chart(document.getElementById('materialPieChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['China (Rubber, EVA, Mesh)', 'Taiwan (Technical Fabrics)', 'South Korea (Mesh, Polymers)', 'Other'],
+    datasets: [{
+      data: [61, 19, 10, 10],
+      backgroundColor: [
+        'rgba(0,200,255,0.7)',
+        'rgba(57,255,133,0.7)',
+        'rgba(123,95,255,0.7)',
+        'rgba(255,159,0,0.6)',
+      ],
+      borderColor: ['#060e1a','#060e1a','#060e1a','#060e1a'],
+      borderWidth: 2,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { padding: 12, color: '#4a7fa5', boxWidth: 12 } },
+      tooltip: { backgroundColor: '#060e1a', borderColor: neonBlue, borderWidth: 1, callbacks: { label: ctx => `${ctx.label}: ${ctx.raw}%` } }
+    },
+    cutout: '55%',
+  }
+});
+
+/* ============================================================
+   5. PLANNING CHART
+============================================================ */
+const months = ['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
+const proactiveData = [1872, 989.5, 107, null, null, null, null, null, null, null, null, null]; // stops at ROP trigger
+const reactiveData  = [1872, 989.5, 107, -775.5, -1658, -2540.5, -3423, -4305.5, -5188, -6070.5, -6953, -7835.5];
+
+new Chart(document.getElementById('planningChart'), {
+  type: 'line',
+  data: {
+    labels: months,
+    datasets: [
+      {
+        label: 'Proactive Method',
+        data: proactiveData,
+        borderColor: neonGreen,
+        backgroundColor: 'rgba(57,255,133,0.08)',
+        borderWidth: 2.5,
+        pointBackgroundColor: neonGreen,
+        pointRadius: 5,
+        fill: true,
+        tension: 0.3,
+        spanGaps: false,
+      },
+      {
+        label: 'Reactive Method',
+        data: reactiveData,
+        borderColor: '#ff6b6b',
+        backgroundColor: 'rgba(255,107,107,0.06)',
+        borderWidth: 2,
+        pointBackgroundColor: '#ff6b6b',
+        pointRadius: 4,
+        fill: true,
+        tension: 0.3,
+        borderDash: [6,3],
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { color: '#4a7fa5', boxWidth: 16 } },
+      tooltip: {
+        backgroundColor: '#060e1a',
+        borderColor: neonBlue,
+        borderWidth: 1,
+        callbacks: { label: ctx => ctx.raw !== null ? `$${ctx.raw.toFixed(1)}M` : 'Restocked (ROP hit)' }
+      }
+    },
+    scales: {
+      x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4a7fa5' } },
+      y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4a7fa5', callback: v => `$${v}M` } }
+    }
+  }
+});
+
+/* ============================================================
+   6. INBOUND PIE CHART
+============================================================ */
+new Chart(document.getElementById('inboundPieChart'), {
+  type: 'pie',
+  data: {
+    labels: ['Sea Freight 80%', 'Air Freight 10%', 'Road Transport 10%'],
+    datasets: [{
+      data: [80, 10, 10],
+      backgroundColor: ['rgba(0,200,255,0.7)', 'rgba(123,95,255,0.7)', 'rgba(57,255,133,0.7)'],
+      borderColor: '#060e1a', borderWidth: 2,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'right', labels: { color: '#4a7fa5', boxWidth: 12, font: { size: 10 } } } }
+  }
+});
+
+/* ============================================================
+   7. OUTBOUND PIE CHART
+============================================================ */
+new Chart(document.getElementById('outboundPieChart'), {
+  type: 'pie',
+  data: {
+    labels: ['Sea Freight 55%', 'Road 30%', 'Air Freight 10%', 'Rail 5%'],
+    datasets: [{
+      data: [55, 30, 10, 5],
+      backgroundColor: ['rgba(0,200,255,0.7)', 'rgba(57,255,133,0.7)', 'rgba(123,95,255,0.7)', 'rgba(255,159,0,0.7)'],
+      borderColor: '#060e1a', borderWidth: 2,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'right', labels: { color: '#4a7fa5', boxWidth: 12, font: { size: 10 } } } }
+  }
+});
+
+/* ============================================================
+   8. FREIGHT COST COMPARISON CHART
+============================================================ */
+new Chart(document.getElementById('freightCostChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Ocean FCL\n(per container)', 'Ocean\n(per tonne)', 'Air Freight\n(per tonne)'],
+    datasets: [{
+      label: 'Cost (USD)',
+      data: [2379, 88, 5700],
+      backgroundColor: [
+        'rgba(0,200,255,0.5)',
+        'rgba(57,255,133,0.5)',
+        'rgba(255,107,107,0.5)',
+      ],
+      borderColor: [neonBlue, neonGreen, '#ff6b6b'],
+      borderWidth: 1.5,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#060e1a',
+        borderColor: neonBlue,
+        borderWidth: 1,
+        callbacks: { label: ctx => `USD ${ctx.raw.toLocaleString()}` }
+      }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: '#4a7fa5' } },
+      y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4a7fa5', callback: v => `$${v.toLocaleString()}` } }
+    }
+  }
+});
+
+/* ============================================================
+   INTERSECTION OBSERVER – animate cards on scroll
+============================================================ */
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.style.opacity = '1';
+      entry.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.glass-card').forEach(card => {
+  card.style.opacity = '0';
+  card.style.transform = 'translateY(20px)';
+  card.style.transition = 'opacity 0.6s ease, transform 0.6s ease, border-color 0.3s, box-shadow 0.3s';
+  observer.observe(card);
+});
+
+/* ============================================================
+   INIT
+============================================================ */
+window.addEventListener('load', () => {
+  setTimeout(animateBars, 800);
+});
+</script>
+</body>
+</html>
